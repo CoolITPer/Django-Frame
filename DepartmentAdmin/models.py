@@ -22,11 +22,54 @@ from django.db.models import Manager
 #      # 使用自定义模型管理器
 #      objects = DepartmentManager()
 
+class BookInfo(models.Model):
+    """图书模型类"""
+    btitle = models.CharField(max_length=20, verbose_name='标题')
+    bpub_date = models.DateField(verbose_name='发布日期')
+    bread = models.IntegerField(default=0, verbose_name='阅读量')
+    bcomment = models.IntegerField(default=0, verbose_name='评论量')
+    is_delete = models.BooleanField(default=False, verbose_name='删除标记')
+    image = models.ImageField(upload_to='booktest', verbose_name='图片', default='')
 
-# Create your models here.
+    class Meta:
+        db_table = 'tb_books'
+        verbose_name = '图书'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.btitle
+
+
+class HeroInfo(models.Model):
+    """英雄模型类"""
+    GENDER_CHOICES = (
+        (0, '男'),
+        (1, '女')
+    )
+    hname = models.CharField(max_length=20, verbose_name='名称')
+    hgender = models.SmallIntegerField(choices=GENDER_CHOICES, default=0, verbose_name='性别')
+    hcomment = models.CharField(max_length=200, null=True, verbose_name='备注')
+    is_delete = models.BooleanField(default=False, verbose_name='删除标记')
+    hbook = models.ForeignKey('BookInfo', on_delete=models.CASCADE, verbose_name='所属图书')
+
+    class Meta:
+        db_table = 'tb_heros'
+        verbose_name = '英雄'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.hname
+
+
+class TestUser(models.Model):
+    # 用户名
+    name = models.CharField(max_length=20)
+    # 用户头像  保存到media/users
+    avatar = models.ImageField(upload_to='users', null=True)
+
+
 class Department(models.Model):
     """部门类"""
-
     # 部门名称：字符串类型(必须要指定最大长度)
     name = models.CharField(max_length=20)
     # 部门成立时间: 日期类型
@@ -34,12 +77,19 @@ class Department(models.Model):
     # 逻辑删除标识：标识部门是否删除
     is_delete = models.BooleanField(default=False)
 
+    def GetTime(self):
+        return self.create_date.strftime('%Y-%m-%d')
+    GetTime.short_description ='创建时间'
+    GetTime.admin_order_field='create_date'
+
     def __str__(self):
         return self.name
 
     class Meta:
         # 指定表名
         db_table = 'department'
+        verbose_name = '部门'
+        verbose_name_plural = verbose_name  # 去掉复数的s
 
 class Employee(models.Model):
     """员工类"""
@@ -67,3 +117,5 @@ class Employee(models.Model):
     class Meta:
         # 指定表名
         db_table = 'employee'
+        verbose_name = '员工'
+        verbose_name_plural = verbose_name  # 去掉复数的s

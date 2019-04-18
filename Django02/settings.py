@@ -148,3 +148,5 @@ CACHES = {
 # session数据缓存到Redis中
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+'''上传图片保存路径'''
+MEDIA_ROOT=os.path.join(BASE_DIR,"media")
