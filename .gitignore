@@ -1,2 +1,4 @@
 .idea
-migrations
+ClassView/migrations/
+DepartmentAdmin/migrations/
+users/migrations/
