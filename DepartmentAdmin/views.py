@@ -1,124 +1,85 @@
-from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
+from rest_framework import viewsets, status, mixins
+from rest_framework.decorators import action
+from rest_framework.generics import GenericAPIView
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
-# Create your views here.
-from django.views import View
-from django_redis.serializers import json
+# url(r'^books/$', views.BookListView.as_view()),
+from rest_framework.viewsets import GenericViewSet
 
 from DepartmentAdmin.models import BookInfo
+from DepartmentAdmin.serializers import BookInfoSerializer, BookInfoReadSerializer
 
 
-class BookListView(View):
-    """
-    查询所有图书、增加图书
-    """
+class BookListView(APIView):
+    '''后台给前端返回数据：查询--序列化--返回序列化数据'''
     def get(self, request):
-        """
-        查询所有图书
-        路由：GET /books/
-        """
-        queryset = BookInfo.objects.all()
-        book_list = []
-        '''将查询对象转化成列表对象'''
-        for book in queryset:
-            book_list.append({
-                'id': book.id,
-                'btitle': book.btitle,
-                'bpub_date': book.bpub_date,
-                'bread': book.bread,
-                'bcomment': book.bcomment,
-                'image': book.image.url if book.image else ''
-            })
-        #返回json字符串 加上safe属性
-        return JsonResponse(book_list, safe=False)
+        books = BookInfo.objects.all()
+        serializer = BookInfoSerializer(books, many=True)
+        return Response(serializer.data)
 
-    def post(self, request):
-        """
-        新增图书
-        路由：POST /books/
-        """
-        '''request.body来获取原始数据，再按json去解析decode
-            再用loads方法转化成字符串'''
-        json_bytes = request.body
-        json_str = json_bytes.decode()
-        book_dict = json.loads(json_str)
+# url(r'^books/(?P<pk>\d+)/$', views.BookDetailView.as_view()),
+class BookDetailView(GenericAPIView):
+    queryset = BookInfo.objects.all() #指名查询数据集
+    serializer_class = BookInfoSerializer  #指名序列化器
 
-        # 此处详细的校验参数省略
-        '''保存数据'''
-        book = BookInfo.objects.create(
-            btitle=book_dict.get('btitle'),
-            bpub_date=book_dict.get('bpub_date')
-        )
-
-        return JsonResponse({
-            'id': book.id,
-            'btitle': book.btitle,
-            'bpub_date': book.bpub_date,
-            'bread': book.bread,
-            'bcomment': book.bcomment,
-            'image': book.image.url if book.image else ''
-        }, status=201)
-
-
-class BookDetailView(View):
     def get(self, request, pk):
-        """
-        获取单个图书信息
-        路由： GET  /books/<pk>/
-        """
+        book = self.get_object() # get_object()方法根据pk参数查找queryset中的数据对象，获取单一数据
+        serializer = self.get_serializer(book)  #将数据序列化
+        return Response(serializer.data)
+
+'''同一个get方法对应两种不同的请求'''
+# url(r'^books/$', BookInfoViewSet.as_view({'get':'list'}),
+#url(r'^books/(?P<pk>\d+)/$', BookInfoViewSet.as_view({'get': 'retrieve'})
+class BookInfoViewSet(viewsets.ViewSet):
+
+    def list(self, request):
+        books = BookInfo.objects.all()
+        serializer = BookInfoSerializer(books, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
         try:
-            book = BookInfo.objects.get(pk=pk)
+            books = BookInfo.objects.get(id=pk)
         except BookInfo.DoesNotExist:
-            return HttpResponse(status=404)
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = BookInfoSerializer(books)
+        return Response(serializer.data)
 
-        return JsonResponse({
-            'id': book.id,
-            'btitle': book.btitle,
-            'bpub_date': book.bpub_date,
-            'bread': book.bread,
-            'bcomment': book.bcomment,
-            'image': book.image.url if book.image else ''
-        })
 
-    def put(self, request, pk):
+'''最简化的写法：不管是查询所有的书籍还是单个书籍都可以'''
+class BookInfoViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet):
+    queryset = BookInfo.objects.all()
+    serializer_class = BookInfoSerializer
+
+class BookInfoViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet):
+    queryset = BookInfo.objects.all()
+    serializer_class = BookInfoSerializer
+
+    '''根据action来指定不同的序列化器'''
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return BookInfoReadSerializer
+        else:
+            return BookInfoSerializer
+
+    @action(methods=['get'], detail=False)
+    def latest(self, request):
         """
-        修改图书信息
-        路由： PUT  /books/<pk>
+        返回最新的图书信息
         """
-        try:
-            book = BookInfo.objects.get(pk=pk)
-        except BookInfo.DoesNotExist:
-            return HttpResponse(status=404)
+        book = BookInfo.objects.latest('id')
+        serializer = self.get_serializer(book)
+        return Response(serializer.data)
+    '''修改阅读量：取到对象本身--获取前台阅读量--保存数据（执行更新）--序列化--返回前端'''
 
-        json_bytes = request.body
-        json_str = json_bytes.decode()
-        book_dict = json.loads(json_str)
-
-        # 此处详细的校验参数省略
-
-        book.btitle = book_dict.get('btitle')
-        book.bpub_date = book_dict.get('bpub_date')
+    @action(methods=['put'], detail=True)
+    def read(self, request, pk):
+        """
+        修改图书的阅读量数据
+        """
+        book = self.get_object()
+        book.bread = request.data.get('read')
         book.save()
-
-        return JsonResponse({
-            'id': book.id,
-            'btitle': book.btitle,
-            'bpub_date': book.bpub_date,
-            'bread': book.bread,
-            'bcomment': book.bcomment,
-            'image': book.image.url if book.image else ''
-        })
-
-    def delete(self, request, pk):
-        """
-        删除图书
-        路由： DELETE /books/<pk>/
-        """
-        try:
-            book = BookInfo.objects.get(pk=pk)
-        except BookInfo.DoesNotExist:
-            return HttpResponse(status=404)
-
-        book.delete()
-
-        return HttpResponse(status=204)
+        serializer = self.get_serializer(book)
+        return Response(serializer.data)

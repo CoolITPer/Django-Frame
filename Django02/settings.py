@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'users.apps.UsersConfig',
     'ClassView.apps.ClassviewConfig',
-    'DepartmentAdmin.apps.DepartmentadminConfig'
+    'DepartmentAdmin.apps.DepartmentadminConfig',
+     'rest_framework'
 ]
 
 MIDDLEWARE = [
@@ -150,3 +151,13 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 '''上传图片保存路径'''
 MEDIA_ROOT=os.path.join(BASE_DIR,"media")
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (  # 默认响应渲染类
+        'rest_framework.renderers.JSONRenderer',  # json渲染器
+        'rest_framework.renderers.BrowsableAPIRenderer',  # 浏览API渲染器
+    )
+}
+
+

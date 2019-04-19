@@ -25,7 +25,7 @@ from django.db.models import Manager
 class BookInfo(models.Model):
     """图书模型类"""
     btitle = models.CharField(max_length=20, verbose_name='标题')
-    bpub_date = models.DateField(verbose_name='发布日期')
+    bpub_date = models.DateField(default='',verbose_name='发布日期')
     bread = models.IntegerField(default=0, verbose_name='阅读量')
     bcomment = models.IntegerField(default=0, verbose_name='评论量')
     is_delete = models.BooleanField(default=False, verbose_name='删除标记')

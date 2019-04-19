@@ -22,5 +22,5 @@ urlpatterns = [
     # url(r'^users/index$', views.index),
     url(r'^users/', include('users.urls',namespace='users')),  #这样可以一次性引入users下面的所有路由
     url(r'ClassView/',include('ClassView.urls',namespace='classview')),
-    url(r'DepartmentAdmin/',include('DepartmentAdmin.urls',namespace='DepartmentAdmin'))
+    url(r'DepartmentAdmin/',include('DepartmentAdmin.urls'))
 ]
